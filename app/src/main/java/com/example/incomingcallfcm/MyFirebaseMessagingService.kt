@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
@@ -16,8 +17,10 @@ import kotlinx.coroutines.launch
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        Log.d("FCM", "From: ${remoteMessage.from}")
         val sharedPreferences = getSharedPreferences("settings", Context.MODE_PRIVATE)
         if (!sharedPreferences.getBoolean("notifications_enabled", true)) {
+            Log.d("FCM", "Notifications are disabled. Ignoring message.")
             return
         }
 
