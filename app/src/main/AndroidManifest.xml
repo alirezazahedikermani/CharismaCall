@@ -29,8 +29,7 @@
             android:launchMode="singleTop"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
-            android:excludeFromRecents="true"
-            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+            android:excludeFromRecents="true" />
 
         <activity android:name=".SettingsActivity" />
         <activity android:name=".CallHistoryActivity" />
