@@ -24,9 +24,7 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".IncomingCallActivity"
-            android:launchMode="singleTop" />
+        <activity android:name=".IncomingCallActivity" android:launchMode="singleTop" />
 
         <activity android:name=".SettingsActivity" />
         <activity android:name=".CallHistoryActivity" />
