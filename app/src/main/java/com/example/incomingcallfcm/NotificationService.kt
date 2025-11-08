@@ -21,11 +21,7 @@ class NotificationService : Service() {
         val channelId = "incoming_call"
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Incoming Call", NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Incoming call alerts"
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            }
+            val channel = NotificationChannel(channelId, "Incoming Call", NotificationManager.IMPORTANCE_HIGH)
             notificationManager.createNotificationChannel(channel)
         }
 
@@ -33,11 +29,9 @@ class NotificationService : Service() {
             .setContentTitle("Incoming Call")
             .setContentText("You have an incoming call.")
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setFullScreenIntent(pendingIntent, true)
-            .setOngoing(true)       // prevents swipe dismissal
-            .setAutoCancel(true)    // allows cancel when answered/rejected
 
         startForeground(1, notificationBuilder.build())
 

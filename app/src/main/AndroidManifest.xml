@@ -23,23 +23,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".IncomingCallActivity"
-            android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:excludeFromRecents="true"
-            android:launchMode="singleTop"
-            android:taskAffinity=""
-            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
-            android:exported="true"
-            android:screenOrientation="portrait">
-            <intent-filter>
-                <action android:name="com.example.ACTION_INCOMING_CALL" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-
+        <activity android:name=".IncomingCallActivity" android:launchMode="singleTop" />
         <activity android:name=".SettingsActivity" />
         <activity android:name=".CallHistoryActivity" />
         <service
