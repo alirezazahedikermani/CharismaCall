@@ -26,10 +26,7 @@
 
         <activity
             android:name=".IncomingCallActivity"
-            android:launchMode="singleTop"
-            android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:excludeFromRecents="true" />
+            android:launchMode="singleTop" />
 
         <activity android:name=".SettingsActivity" />
         <activity android:name=".CallHistoryActivity" />
