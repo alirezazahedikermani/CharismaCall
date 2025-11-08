@@ -26,10 +26,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         val intent = Intent(this, NotificationService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
-        }
+        ContextCompat.startForegroundService(this, intent)
+
     }
 }
