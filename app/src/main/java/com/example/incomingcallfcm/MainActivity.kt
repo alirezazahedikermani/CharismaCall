@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkFullScreenIntentPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= 34) {
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.canUseFullScreenIntent()) {
                 AlertDialog.Builder(this)
