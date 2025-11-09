@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
@@ -41,10 +42,11 @@ class MainActivity : AppCompatActivity() {
         askNotificationPermission()
         checkFullScreenIntentPermission()
         checkManageOwnCallsPermission()
+        checkBatteryOptimization()
+        checkSystemAlertWindowPermission()
     }
 
     private fun askNotificationPermission() {
-        // This is only necessary for API level 33 and above.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -53,12 +55,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkFullScreenIntentPermission() {
-        if (Build.VERSION.SDK_INT >= 34) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.canUseFullScreenIntent()) {
                 AlertDialog.Builder(this)
                     .setTitle("Permission Required")
-                    .setMessage("This app needs the 'Full-screen intents' permission to show incoming calls on the lock screen. Please grant this permission in the app settings.")
+                    .setMessage("This app needs 'Full-screen intents' permission to show incoming calls on the lock screen.")
                     .setPositiveButton("Open Settings") { _, _ ->
                         val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$packageName"))
                         startActivity(intent)
@@ -73,6 +75,48 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.MANAGE_OWN_CALLS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissionLauncher.launch(Manifest.permission.MANAGE_OWN_CALLS)
+            }
+        }
+    }
+
+    private fun checkBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            val packageName = packageName
+            
+            if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                AlertDialog.Builder(this)
+                    .setTitle("Battery Optimization")
+                    .setMessage("For reliable incoming call notifications, please disable battery optimization for this app.")
+                    .setPositiveButton("Open Settings") { _, _ ->
+                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = Uri.parse("package:$packageName")
+                        }
+                        try {
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            // Fallback to general battery settings
+                            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
+    }
+
+    private fun checkSystemAlertWindowPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                AlertDialog.Builder(this)
+                    .setTitle("Display over other apps")
+                    .setMessage("This permission helps show incoming calls more reliably.")
+                    .setPositiveButton("Open Settings") { _, _ ->
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                        startActivity(intent)
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
             }
         }
     }

@@ -7,7 +7,9 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 
@@ -15,12 +17,13 @@ class NotificationService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val activityIntent = Intent(this, IncomingCallActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NO_USER_ACTION)
+            putExtra("from_notification", true)
         }
         
         val pendingIntent = PendingIntent.getActivity(
             this, 
-            0, 
+            System.currentTimeMillis().toInt(), // Unique request code
             activityIntent, 
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -35,32 +38,44 @@ class NotificationService : Service() {
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Incoming call notifications"
-                setSound(null, null) // Disable sound as we play ringtone in activity
+                setSound(null, null)
+                setBypassDnd(true)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
             notificationManager.createNotificationChannel(channel)
         }
 
-        val notificationBuilder = NotificationCompat.Builder(this, channelId)
+        val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Incoming Call")
-            .setContentText("You have an incoming call.")
+            .setContentText("Tap to answer")
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setAutoCancel(true)
             .setOngoing(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setFullScreenIntent(pendingIntent, true)
+            .setContentIntent(pendingIntent)
+            .build()
 
         Log.d("NotificationService", "Starting foreground with full screen intent")
-        startForeground(1, notificationBuilder.build())
+        startForeground(1, notification)
         
-        // Also try to launch activity directly
-        try {
-            startActivity(activityIntent)
-        } catch (e: Exception) {
-            Log.e("NotificationService", "Failed to start activity directly", e)
-        }
+        // Try to launch activity after a short delay
+        Handler(Looper.getMainLooper()).postDelayed({
+            try {
+                startActivity(activityIntent)
+                Log.d("NotificationService", "Activity launched from service")
+            } catch (e: Exception) {
+                Log.e("NotificationService", "Failed to start activity from service", e)
+            }
+        }, 100)
         
-        // Keep service alive longer
+        // Auto-stop service after 60 seconds
+        Handler(Looper.getMainLooper()).postDelayed({
+            stopSelf()
+        }, 60000)
+        
         return START_STICKY
     }
 

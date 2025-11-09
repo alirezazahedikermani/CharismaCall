@@ -25,11 +25,25 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             db.callHistoryDao().insert(CallHistory(timestamp = System.currentTimeMillis()))
         }
 
-        val intent = Intent(this, NotificationService::class.java)
+        // Launch the activity directly first (works when app is in foreground or recent)
+        val activityIntent = Intent(this, IncomingCallActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra("from_fcm", true)
+        }
+        
+        try {
+            startActivity(activityIntent)
+            Log.d("FCM", "Activity launched directly")
+        } catch (e: Exception) {
+            Log.e("FCM", "Failed to launch activity directly", e)
+        }
+
+        // Always start the notification service as backup
+        val serviceIntent = Intent(this, NotificationService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
+            startForegroundService(serviceIntent)
         } else {
-            startService(intent)
+            startService(serviceIntent)
         }
     }
 }
