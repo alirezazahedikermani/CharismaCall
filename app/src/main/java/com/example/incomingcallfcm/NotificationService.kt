@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 
 class NotificationService : Service() {
@@ -33,7 +34,9 @@ class NotificationService : Service() {
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setFullScreenIntent(pendingIntent, true)
 
+        Log.d("NotificationService", "Setting full screen intent")
         startForeground(1, notificationBuilder.build())
+        Log.d("NotificationService", "startForeground called")
 
         return START_NOT_STICKY
     }
