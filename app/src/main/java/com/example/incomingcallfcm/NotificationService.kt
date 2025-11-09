@@ -20,9 +20,36 @@ class NotificationService : Service() {
         private const val CHANNEL_ID = "incoming_call"
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onCreate() {
+        super.onCreate()
+        // Create notification immediately in onCreate
         createNotificationChannel()
+        startForeground(NOTIFICATION_ID, createNotification())
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d("NotificationService", "Service started")
         
+        val activityIntent = Intent(this, IncomingCallActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or 
+                     Intent.FLAG_ACTIVITY_CLEAR_TOP or 
+                     Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
+                     Intent.FLAG_ACTIVITY_NO_HISTORY)
+            putExtra("from_notification", true)
+        }
+        
+        // Try multiple times to launch the activity
+        launchActivityWithRetries(activityIntent)
+        
+        // Auto-stop service after 60 seconds
+        Handler(Looper.getMainLooper()).postDelayed({
+            stopSelf()
+        }, 60000)
+        
+        return START_STICKY
+    }
+
+    private fun createNotification(): android.app.Notification {
         val activityIntent = Intent(this, IncomingCallActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or 
                      Intent.FLAG_ACTIVITY_CLEAR_TOP or 
@@ -38,7 +65,7 @@ class NotificationService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Incoming Call")
             .setContentText("Tap to answer")
             .setSmallIcon(R.mipmap.ic_launcher)
@@ -51,18 +78,6 @@ class NotificationService : Service() {
             .setContentIntent(pendingIntent)
             .setTimeoutAfter(60000) // Auto dismiss after 60 seconds
             .build()
-
-        startForeground(NOTIFICATION_ID, notification)
-        
-        // Try multiple times to launch the activity
-        launchActivityWithRetries(activityIntent)
-        
-        // Auto-stop service after 60 seconds
-        Handler(Looper.getMainLooper()).postDelayed({
-            stopSelf()
-        }, 60000)
-        
-        return START_STICKY
     }
 
     private fun launchActivityWithRetries(intent: Intent) {
@@ -111,6 +126,7 @@ class NotificationService : Service() {
     }
 
     override fun onDestroy() {
+        Log.d("NotificationService", "Service destroyed")
         super.onDestroy()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE)
