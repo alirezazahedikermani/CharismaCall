@@ -11,13 +11,12 @@ import android.widget.Toast
 
 class IncomingCallActivity : AppCompatActivity() {
 
-    private lateinit var mediaPlayer: MediaPlayer
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_incoming_call)
-        Log.d("IncomingCallActivity", "Activity created")
-
+        
+        // Set flags to show on lock screen BEFORE setContentView
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -26,23 +25,53 @@ class IncomingCallActivity : AppCompatActivity() {
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                         or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
                         or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+                        or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             )
         }
+        
+        setContentView(R.layout.activity_incoming_call)
+        Log.d("IncomingCallActivity", "Activity created")
 
-        mediaPlayer = MediaPlayer.create(this, R.raw.ringtone)
-        mediaPlayer.isLooping = true
-        mediaPlayer.start()
+        // Initialize and start ringtone
+        try {
+            mediaPlayer = MediaPlayer.create(this, R.raw.ringtone)?.apply {
+                isLooping = true
+                start()
+            }
+        } catch (e: Exception) {
+            Log.e("IncomingCallActivity", "Failed to play ringtone", e)
+        }
 
         findViewById<Button>(R.id.acceptButton).setOnClickListener {
-            mediaPlayer.stop()
+            stopRingtone()
             Toast.makeText(this, "Call Accepted", Toast.LENGTH_SHORT).show()
             finish()
         }
 
         findViewById<Button>(R.id.rejectButton).setOnClickListener {
-            mediaPlayer.stop()
+            stopRingtone()
             Toast.makeText(this, "Call Rejected", Toast.LENGTH_SHORT).show()
             finish()
         }
+    }
+
+    private fun stopRingtone() {
+        mediaPlayer?.apply {
+            if (isPlaying) {
+                stop()
+            }
+            release()
+        }
+        mediaPlayer = null
+    }
+
+    override fun onDestroy() {
+        stopRingtone()
+        super.onDestroy()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Don't stop ringtone on pause, user might go back
     }
 }
