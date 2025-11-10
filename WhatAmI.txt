@@ -1,0 +1,26 @@
+This is an Android application called CharismaCall that handles incoming call notifications via Firebase Cloud Messaging (FCM).
+Main Purpose
+It receives incoming call notifications from a server and displays them to users with a full-screen call interface, even when the device is locked or the screen is off.
+Key Features
+Dual Notification System:
+Overlay Service - Shows a floating overlay UI on top of all apps (when permission granted)
+Notification Service - Falls back to full-screen notification with high priority
+Call Handling:
+Receives FCM messages in MyFirebaseMessagingService.kt
+Displays incoming calls via IncomingCallActivity.kt
+Plays ringtone and shows Accept/Reject buttons
+Works on lock screen with screen turned off
+Call History:
+Stores all incoming calls in a Room database
+View history in CallHistoryActivity.kt
+Settings:
+Toggle notifications on/off
+View and copy FCM token
+SettingsActivity.kt
+How It Works
+Server sends FCM message with call data
+App receives message and checks notification preferences
+Saves call to database
+Shows call using either overlay (if permitted) or full-screen notification
+Plays ringtone until user accepts/rejects or 60 seconds timeout
+The app requires extensive permissions (full-screen intent, overlay, battery optimization exemption, etc.) to ensure reliable delivery even when the app is in the background or the device is locked.

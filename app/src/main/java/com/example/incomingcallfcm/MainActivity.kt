@@ -30,21 +30,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        findViewById<Button>(R.id.settingsButton).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
-        }
-
-        findViewById<Button>(R.id.historyButton).setOnClickListener {
-            startActivity(Intent(this, CallHistoryActivity::class.java))
-        }
-
+        // Check permissions first
         askNotificationPermission()
         checkFullScreenIntentPermission()
         checkManageOwnCallsPermission()
         checkBatteryOptimization()
         checkSystemAlertWindowPermission()
+
+        // Launch CallHistoryActivity as main page
+        val intent = Intent(this, CallHistoryActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 
     private fun askNotificationPermission() {

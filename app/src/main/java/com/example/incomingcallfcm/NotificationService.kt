@@ -29,23 +29,28 @@ class NotificationService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("NotificationService", "Service started")
-        
+
+        val name = intent?.getStringExtra("name") ?: "Incoming Call"
+        val subject = intent?.getStringExtra("subject") ?: ""
+
         val activityIntent = Intent(this, IncomingCallActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or 
-                     Intent.FLAG_ACTIVITY_CLEAR_TOP or 
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
+                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
                      Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
                      Intent.FLAG_ACTIVITY_NO_HISTORY)
             putExtra("from_notification", true)
+            putExtra("name", name)
+            putExtra("subject", subject)
         }
-        
+
         // Try multiple times to launch the activity
         launchActivityWithRetries(activityIntent)
-        
-        // Auto-stop service after 60 seconds
+
+        // Auto-stop service after 30 seconds
         Handler(Looper.getMainLooper()).postDelayed({
             stopSelf()
-        }, 60000)
-        
+        }, 30000)
+
         return START_STICKY
     }
 
@@ -76,7 +81,7 @@ class NotificationService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setFullScreenIntent(pendingIntent, true)
             .setContentIntent(pendingIntent)
-            .setTimeoutAfter(60000) // Auto dismiss after 60 seconds
+            .setTimeoutAfter(30000) // Auto dismiss after 30 seconds
             .build()
     }
 

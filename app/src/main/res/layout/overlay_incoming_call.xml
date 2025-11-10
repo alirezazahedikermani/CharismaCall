@@ -23,14 +23,24 @@
             android:gravity="center">
 
             <TextView
-                android:id="@+id/callerName"
+                android:id="@+id/callerNameText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Incoming Call"
                 android:textSize="28sp"
                 android:textColor="#000000"
                 android:textStyle="bold"
-                android:layout_marginBottom="32dp" />
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/callSubjectText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="16sp"
+                android:textColor="#666666"
+                android:visibility="gone"
+                android:layout_marginBottom="24dp" />
 
             <LinearLayout
                 android:layout_width="wrap_content"

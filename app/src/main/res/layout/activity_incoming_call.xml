@@ -7,16 +7,31 @@
     tools:context=".IncomingCallActivity">
 
     <TextView
-        android:id="@+id/callerName"
+        android:id="@+id/callerNameText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Incoming Call"
         android:textSize="34sp"
-        app:layout_constraintBottom_toTopOf="@+id/linearLayout"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/callSubjectText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.3" />
+        app:layout_constraintVertical_bias="0.3"
+        app:layout_constraintVertical_chainStyle="packed" />
+
+    <TextView
+        android:id="@+id/callSubjectText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text=""
+        android:textSize="18sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/callerNameText" />
 
     <LinearLayout
         android:id="@+id/linearLayout"

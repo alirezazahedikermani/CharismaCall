@@ -38,17 +38,20 @@ class OverlayService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("OverlayService", "Service started")
-        
+
+        val name = intent?.getStringExtra("name") ?: "Incoming Call"
+        val subject = intent?.getStringExtra("subject") ?: ""
+
         // Check if we have overlay permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             Log.e("OverlayService", "No overlay permission")
             // Fall back to launching activity
-            launchActivity()
+            launchActivity(name, subject)
             stopSelf()
             return START_NOT_STICKY
         }
 
-        showOverlay()
+        showOverlay(name, subject)
         startRingtone()
 
         return START_STICKY
@@ -82,7 +85,7 @@ class OverlayService : Service() {
         }
     }
 
-    private fun showOverlay() {
+    private fun showOverlay(name: String, subject: String) {
         try {
             windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
@@ -108,6 +111,15 @@ class OverlayService : Service() {
 
             overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_incoming_call, null)
 
+            // Update overlay with name and subject
+            overlayView?.findViewById<android.widget.TextView>(R.id.callerNameText)?.text = name
+            if (subject.isNotEmpty()) {
+                overlayView?.findViewById<android.widget.TextView>(R.id.callSubjectText)?.apply {
+                    text = subject
+                    visibility = View.VISIBLE
+                }
+            }
+
             overlayView?.findViewById<Button>(R.id.acceptButton)?.setOnClickListener {
                 Log.d("OverlayService", "Call accepted")
                 stopRingtone()
@@ -127,14 +139,16 @@ class OverlayService : Service() {
         } catch (e: Exception) {
             Log.e("OverlayService", "Failed to add overlay", e)
             // Fall back to launching activity
-            launchActivity()
+            launchActivity(name, subject)
             stopSelf()
         }
     }
 
-    private fun launchActivity() {
+    private fun launchActivity(name: String, subject: String) {
         val activityIntent = Intent(this, IncomingCallActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra("name", name)
+            putExtra("subject", subject)
         }
         try {
             startActivity(activityIntent)
