@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 
@@ -18,13 +19,17 @@ class NotificationService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "incoming_call"
+        private const val WAKE_LOCK_TAG = "CharismaCall:IncomingCall"
     }
+
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onCreate() {
         super.onCreate()
+        // Acquire wake lock to ensure device wakes up
+        acquireWakeLock()
         // Create notification immediately in onCreate
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -33,18 +38,8 @@ class NotificationService : Service() {
         val name = intent?.getStringExtra("name") ?: "Incoming Call"
         val subject = intent?.getStringExtra("subject") ?: ""
 
-        val activityIntent = Intent(this, IncomingCallActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
-                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                     Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
-                     Intent.FLAG_ACTIVITY_NO_HISTORY)
-            putExtra("from_notification", true)
-            putExtra("name", name)
-            putExtra("subject", subject)
-        }
-
-        // Try multiple times to launch the activity
-        launchActivityWithRetries(activityIntent)
+        // Start foreground with full-screen notification
+        startForeground(NOTIFICATION_ID, createNotification(name, subject))
 
         // Auto-stop service after 30 seconds
         Handler(Looper.getMainLooper()).postDelayed({
@@ -54,25 +49,28 @@ class NotificationService : Service() {
         return START_STICKY
     }
 
-    private fun createNotification(): android.app.Notification {
+    private fun createNotification(name: String = "Incoming Call", subject: String = ""): android.app.Notification {
         val activityIntent = Intent(this, IncomingCallActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or 
-                     Intent.FLAG_ACTIVITY_CLEAR_TOP or 
-                     Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
-                     Intent.FLAG_ACTIVITY_NO_HISTORY)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
+                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                     Intent.FLAG_ACTIVITY_NO_USER_ACTION)
             putExtra("from_notification", true)
+            putExtra("name", name)
+            putExtra("subject", subject)
         }
-        
+
         val pendingIntent = PendingIntent.getActivity(
-            this, 
-            0,
-            activityIntent, 
+            this,
+            System.currentTimeMillis().toInt(), // Unique request code
+            activityIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val displayText = if (subject.isNotEmpty()) "$name - $subject" else name
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Incoming Call")
-            .setContentText("Tap to answer")
+            .setContentTitle(displayText)
+            .setContentText("Incoming call")
             .setSmallIcon(R.mipmap.ic_launcher)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
@@ -85,53 +83,63 @@ class NotificationService : Service() {
             .build()
     }
 
-    private fun launchActivityWithRetries(intent: Intent) {
-        // Try immediately
-        tryLaunchActivity(intent)
-        
-        // Try again after 500ms
-        Handler(Looper.getMainLooper()).postDelayed({
-            tryLaunchActivity(intent)
-        }, 500)
-        
-        // Try again after 1000ms
-        Handler(Looper.getMainLooper()).postDelayed({
-            tryLaunchActivity(intent)
-        }, 1000)
+    private fun acquireWakeLock() {
+        try {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK or
+                PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                PowerManager.ON_AFTER_RELEASE,
+                WAKE_LOCK_TAG
+            ).apply {
+                acquire(30000) // 30 seconds
+            }
+            Log.d("NotificationService", "Wake lock acquired")
+        } catch (e: Exception) {
+            Log.e("NotificationService", "Failed to acquire wake lock", e)
+        }
     }
 
-    private fun tryLaunchActivity(intent: Intent) {
+    private fun releaseWakeLock() {
         try {
-            startActivity(intent)
-            Log.d("NotificationService", "Activity launched")
+            wakeLock?.let {
+                if (it.isHeld) {
+                    it.release()
+                    Log.d("NotificationService", "Wake lock released")
+                }
+            }
+            wakeLock = null
         } catch (e: Exception) {
-            Log.e("NotificationService", "Failed to launch activity", e)
+            Log.e("NotificationService", "Failed to release wake lock", e)
         }
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            
+
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Incoming Call",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Incoming call notifications"
-                setSound(null, null)
+                description = "Full-screen notifications for incoming calls"
+                setSound(null, null) // Sound is handled by the activity
                 setBypassDnd(true)
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 1000, 500, 1000)
+                setShowBadge(false)
             }
-            
+
             notificationManager.createNotificationChannel(channel)
+            Log.d("NotificationService", "Notification channel created with HIGH importance")
         }
     }
 
     override fun onDestroy() {
         Log.d("NotificationService", "Service destroyed")
+        releaseWakeLock()
         super.onDestroy()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE)

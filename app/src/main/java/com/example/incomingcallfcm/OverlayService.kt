@@ -9,7 +9,10 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.media.MediaPlayer
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
@@ -24,14 +27,18 @@ class OverlayService : Service() {
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
     private var mediaPlayer: MediaPlayer? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
     companion object {
         private const val NOTIFICATION_ID = 2
         private const val CHANNEL_ID = "overlay_service"
+        private const val WAKE_LOCK_TAG = "CharismaCall:Overlay"
     }
 
     override fun onCreate() {
         super.onCreate()
+        // Acquire wake lock
+        acquireWakeLock()
         // Start as foreground immediately
         startForeground(NOTIFICATION_ID, createNotification())
     }
@@ -194,8 +201,40 @@ class OverlayService : Service() {
         stopSelf()
     }
 
+    private fun acquireWakeLock() {
+        try {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK or
+                PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                PowerManager.ON_AFTER_RELEASE,
+                WAKE_LOCK_TAG
+            ).apply {
+                acquire(30000) // 30 seconds
+            }
+            Log.d("OverlayService", "Wake lock acquired")
+        } catch (e: Exception) {
+            Log.e("OverlayService", "Failed to acquire wake lock", e)
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            wakeLock?.let {
+                if (it.isHeld) {
+                    it.release()
+                    Log.d("OverlayService", "Wake lock released")
+                }
+            }
+            wakeLock = null
+        } catch (e: Exception) {
+            Log.e("OverlayService", "Failed to release wake lock", e)
+        }
+    }
+
     override fun onDestroy() {
         Log.d("OverlayService", "Service destroyed")
+        releaseWakeLock()
         stopRingtone()
         removeOverlay()
         super.onDestroy()
